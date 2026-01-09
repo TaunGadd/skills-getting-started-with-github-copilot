@@ -25,7 +25,57 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <h5>Participants</h5>
+            <ul class="participants-list"></ul>
+          </div>
         `;
+
+        // Populate participants list
+        const listEl = activityCard.querySelector(".participants-list");
+
+        function getInitials(text) {
+          if (!text) return "";
+          const base = text.split("@")[0];
+          const parts = base.split(/[\.\-\_\s]+/).filter(Boolean);
+          const initials = parts.map(p => p[0].toUpperCase()).join("").slice(0,2);
+          return initials || base.slice(0,2).toUpperCase();
+        }
+
+        if (Array.isArray(details.participants) && details.participants.length) {
+          details.participants.forEach((p) => {
+            const li = document.createElement("li");
+            li.className = "participant-item";
+
+            const avatar = document.createElement("span");
+            avatar.className = "participant-avatar";
+            avatar.textContent = getInitials(p);
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "participant-name";
+            nameSpan.textContent = p;
+
+            li.appendChild(avatar);
+            li.appendChild(nameSpan);
+
+            const deleteIcon = document.createElement('span');
+            deleteIcon.className = 'delete-icon';
+            deleteIcon.textContent = '🗑️';
+            deleteIcon.style.cursor = 'pointer';
+            deleteIcon.onclick = async () => {
+              await unregisterParticipant(p);
+              li.remove();
+            };
+            li.appendChild(deleteIcon);
+
+            listEl.appendChild(li);
+          });
+        } else {
+          const li = document.createElement("li");
+          li.className = "participant-item none";
+          li.textContent = "No participants yet";
+          listEl.appendChild(li);
+        }
 
         activitiesList.appendChild(activityCard);
 
@@ -62,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh the activities list
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -80,6 +131,22 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error signing up:", error);
     }
   });
+
+  // Function to unregister participant
+  async function unregisterParticipant(participant) {
+    try {
+      const response = await fetch(`/unregister/${encodeURIComponent(participant)}`, { 
+        method: 'DELETE' 
+      });
+      if (!response.ok) {
+        throw new Error('Failed to unregister participant');
+      }
+      fetchActivities(); // Refresh the activities list after unregistering
+    } catch (error) {
+      console.error('Error unregistering participant:', error);
+      alert('Failed to unregister participant');
+    }
+  }
 
   // Initialize app
   fetchActivities();
