@@ -57,6 +57,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             li.appendChild(avatar);
             li.appendChild(nameSpan);
+
+            const deleteIcon = document.createElement('span');
+            deleteIcon.className = 'delete-icon';
+            deleteIcon.textContent = '🗑️';
+            deleteIcon.style.cursor = 'pointer';
+            deleteIcon.onclick = async () => {
+              await unregisterParticipant(p);
+              li.remove();
+            };
+            li.appendChild(deleteIcon);
+
             listEl.appendChild(li);
           });
         } else {
@@ -101,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh the activities list
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -119,6 +131,22 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error signing up:", error);
     }
   });
+
+  // Function to unregister participant
+  async function unregisterParticipant(participant) {
+    try {
+      const response = await fetch(`/unregister/${encodeURIComponent(participant)}`, { 
+        method: 'DELETE' 
+      });
+      if (!response.ok) {
+        throw new Error('Failed to unregister participant');
+      }
+      fetchActivities(); // Refresh the activities list after unregistering
+    } catch (error) {
+      console.error('Error unregistering participant:', error);
+      alert('Failed to unregister participant');
+    }
+  }
 
   // Initialize app
   fetchActivities();
